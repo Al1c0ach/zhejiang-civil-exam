@@ -10,9 +10,11 @@ const { pathToFileURL } = require("url");
 const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
 const PORT = 9333;
 const ROOT = path.join(__dirname, "..");
-const OUT = path.join(ROOT, process.argv[2] ? "preview-standalone" : "preview");
+const arg = process.argv[2];
+const isRemote = !!(arg && /^https?:/i.test(arg));
+const OUT = path.join(ROOT, arg ? "preview-standalone" : "preview");
 const URL = "file:///" + path.join(ROOT, "index.html").replace(/\\/g, "/");
-const TARGET = process.argv[2] ? pathToFileURL(path.resolve(process.argv[2])).href : URL;
+const TARGET = arg ? (isRemote ? arg : pathToFileURL(path.resolve(arg)).href) : URL;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
@@ -99,10 +101,27 @@ async function main() {
     console.log("  截图 " + name + ".png");
   };
 
+  // 等待应用真正启动（远程页面首次加载可能需要数秒）
+  const waitFor = async (expression, timeout = 25000, step = 250) => {
+    const started = Date.now();
+    while (Date.now() - started < timeout) {
+      try {
+        if (await evalJs(expression)) return true;
+      } catch (e) {
+        /* 页面尚未就绪 */
+      }
+      await sleep(step);
+    }
+    return false;
+  };
+
+  const ready = () => waitFor("!!(window.APP && window.APP.BANK && window.APP.BANK.questions && window.APP.BANK.questions.length)");
+
   const resetTo = async (hash) => {
     await evalJs(`localStorage.removeItem('zjks.v1.session'); location.hash = '#/home'`);
     await send("Page.reload");
-    await sleep(1100);
+    await sleep(600);
+    await ready();
     await evalJs(`location.hash = '${hash}'`);
     await sleep(800);
   };
@@ -110,7 +129,9 @@ async function main() {
   await send("Page.enable");
   await send("Runtime.enable");
   await send("Log.enable");
-  await sleep(1200);
+  await sleep(500);
+  const ok = await ready();
+  console.log("  应用就绪：" + (ok ? "是" : "否（超时）"));
 
   console.log("\n[1] 首页渲染");
   const home = await evalJs(`(() => {
