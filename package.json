@@ -1,0 +1,12 @@
+{
+  "name": "zhejiang-civil-exam",
+  "version": "1.0.0",
+  "private": true,
+  "description": "浙江省公务员 / 事业单位 刷题页面（纯前端、本地优先）",
+  "scripts": {
+    "validate": "node scripts/validate.js --verbose",
+    "serve": "node scripts/serve.js 4173",
+    "build": "node scripts/build-standalone.js",
+    "smoke": "node scripts/smoke.js"
+  }
+}
