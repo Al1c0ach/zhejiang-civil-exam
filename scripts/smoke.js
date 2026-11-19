@@ -316,6 +316,8 @@ async function main() {
 
   console.log("\n[10] 深色模式");
   await send("Emulation.setDeviceMetricsOverride", { width: 1366, height: 940, deviceScaleFactor: 1, mobile: false });
+  await evalJs(`location.hash = '#/home'`);
+  await sleep(600);
   await evalJs(`document.querySelector('[data-action="toggle-theme"]').click()`);
   await sleep(500);
   await shot("10-home-dark");
